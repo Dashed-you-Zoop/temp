@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>The Anniversary Vault</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@800&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --retro-yellow: #feda4a;
+            --retro-orange: #fe5b35;
+            --ios-blue: #007AFF;
+            --chest-red: #b30000;
+            --gold-glow: #f1c40f;
+
+            /* Lock Screen (Exciting Red) */
+            --pop-bg: #990022;
+            --pop-accent: #ff4d4d;
+
+            /* Main Page (Peaceful Red/Rose) */
+            --peaceful-bg: #ff8fa3;
+            --peaceful-accent: #800020;
+        }
+
+        html, body {
+            height: 100%; margin: 0; padding: 0; overflow: hidden;
+            background-color: #000; position: fixed; width: 100%;
+            -webkit-user-select: none; touch-action: none;
+        }
+        body { font-family: 'Outfit', sans-serif; display: flex; justify-content: center; align-items: center; }
+
+        /* --- BACKGROUND LAYERS --- */
+        .bg-layer { position: fixed; inset: 0; z-index: 0; width: 100%; height: 100%; overflow: hidden; }
+
+        /* 1. LOCK SCREEN BG: Poppy with Red Notes */
+        #lock-screen-bg {
+            background-color: var(--pop-bg);
+            background-image: 
+                radial-gradient(circle at 10% 10%, var(--retro-orange) 0%, transparent 40%),
+                radial-gradient(circle at 90% 90%, #000 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, #ff0000 0%, transparent 60%);
+            opacity: 1; transition: opacity 1s, transform 1s ease-in-out;
+        }
+
+        /* Animated floating "Poppy" red dots */
+        #lock-screen-bg::after {
+            content: ''; position: absolute; inset: 0;
+            background-image: radial-gradient(rgba(255,255,255,0.2) 1px, transparent 1px);
+            background-size: 30px 30px;
+            animation: bgMove 10s linear infinite;
+        }
+        @keyframes bgMove { from { transform: translateY(0); } to { transform: translateY(-30px); } }
+
+        /* 2. MAIN PAGE BG: Peaceful Warm Red/Rose */
+        #main-scene-bg {
+            background: linear-gradient(180deg, var(--peaceful-bg) 0%, #fb6f92 50%, var(--peaceful-accent) 100%);
+            opacity: 0; z-index: -1; transition: opacity 1.5s ease-in-out;
+        }
+        
+        .peaceful-glow {
+            position: absolute; border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            filter: blur(50px); animation: sunset 10s infinite alternate ease-in-out;
+        }
+        .peaceful-glow:nth-child(1) { width: 400px; height: 400px; top: -100px; left: -100px; }
+        .peaceful-glow:nth-child(2) { width: 300px; height: 300px; bottom: -50px; right: -50px; background: rgba(128, 0, 32, 0.3); }
+
+        @keyframes sunset { from { transform: scale(1); opacity: 0.4; } to { transform: scale(1.2); opacity: 0.7; } }
+
+        /* --- UI ELEMENTS --- */
+        #inventory {
+            position: fixed; top: env(safe-area-inset-top, 20px); right: 20px;
+            display: flex; gap: 10px; z-index: 5000;
+            background: rgba(0,0,0,0.4); padding: 10px; border-radius: 15px;
+        }
+        .key-slot { font-size: 24px; opacity: 0.2; transition: 0.5s; }
+        .key-slot.collected { opacity: 1; filter: drop-shadow(0 0 8px gold); }
+
+        #lock-screen {
+            position: fixed; inset: 0; z-index: 2000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.8s;
+        }
+
+        .modern-retro-title { font-weight: 800; font-size: 1.8rem; background: linear-gradient(to bottom, var(--retro-yellow) 50%, #fff 50.1%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 3px 0 #000); text-align: center; }
+        input { padding: 15px; border-radius: 12px; border: none; margin-bottom: 20px; text-align: center; font-size: 16px; width: 85%; max-width: 300px; -webkit-appearance: none; background: rgba(255,255,255,0.9); }
+        
+        #key-spawn { display: none; font-size: 80px; cursor: pointer; animation: float 2s infinite ease-in-out; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+
+        #chest-zone { display: none; flex-direction: column; align-items: center; }
+        .modern-chest { width: 180px; height: 130px; position: relative; cursor: pointer; }
+        .chest-lid { height: 50px; background: var(--chest-red); border: 4px solid #111; border-radius: 40px 40px 0 0; transform-origin: bottom; transition: 0.8s; z-index: 2; position: relative; }
+        .chest-base { height: 80px; background: var(--chest-red); border: 4px solid #111; border-radius: 0 0 10px 10px; display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: -4px;}
+        .keyhole { width: 20px; height: 20px; background: #1a1a1a; border-radius: 50%; border: 2px solid #333; }
+        .light-on { background: var(--gold-glow) !important; box-shadow: 0 0 15px var(--gold-glow), 0 0 30px var(--gold-glow); border-color: #fff !important; }
+        .chest-open .chest-lid { transform: rotateX(-110deg) translateY(-10px); }
+
+        #main-scene {
+            position: absolute; inset: 0; z-index: 1000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 1.5s;
+        }
+        .scene-3d { width: 210px; height: 280px; perspective: 1000px; margin-top: -80px; }
+        .carousel { width: 100%; height: 100%; position: absolute; transform-style: preserve-3d; transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .polaroid { position: absolute; width: 190px; height: 240px; background: #fff; padding: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+        .polaroid img { width: 100%; height: 180px; object-fit: cover; pointer-events: none; }
+        .polaroid-cap { font-family: 'Press Start 2P'; font-size: 7px; color: #333; margin-top: 10px; text-align: center; }
+
+        /* Geometry */
+        .polaroid:nth-child(1) { transform: rotateY(0deg) translateZ(240px); }
+        .polaroid:nth-child(2) { transform: rotateY(51.4deg) translateZ(240px); }
+        .polaroid:nth-child(3) { transform: rotateY(102.8deg) translateZ(240px); }
+        .polaroid:nth-child(4) { transform: rotateY(154.2deg) translateZ(240px); }
+        .polaroid:nth-child(5) { transform: rotateY(205.6deg) translateZ(240px); }
+        .polaroid:nth-child(6) { transform: rotateY(257deg) translateZ(240px); }
+        .polaroid:nth-child(7) { transform: rotateY(308.4deg) translateZ(240px); }
+
+        .mini-cassette {
+            position: fixed; bottom: env(safe-area-inset-bottom, 20px);
+            width: 310px; height: 140px; background: #222; border-radius: 12px;
+            padding: 10px; border: 2px solid #444; box-shadow: 0 8px 0 #000; z-index: 1500;
+            display: flex; flex-direction: column; transform: translateY(250px);
+            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .tape-window { width: 60%; height: 35px; background: #111; margin: 0 auto 8px; border: 1px solid #333; display: flex; justify-content: center; gap: 40px; }
+        .wheel { width: 25px; height: 25px; align-self: center; background: repeating-conic-gradient(#333 0% 30deg, #555 30deg 60deg); border-radius: 50%; }
+        .spinning { animation: spin 3s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .display-screen { background: #000; color: #ff4d4d; font-family: 'Press Start 2P'; font-size: 7px; padding: 5px; overflow: hidden; white-space: nowrap; margin-bottom: 8px; border: 1px solid #222;}
+        .marquee { display: inline-block; animation: scroll 10s linear infinite; }
+        @keyframes scroll { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
+        .c-btn { background: #333; color: white; border: 1px solid #444; padding: 10px 15px; border-radius: 5px; font-size: 14px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="bg-layer" id="lock-screen-bg"></div>
+    <div class="bg-layer" id="main-scene-bg">
+        <div class="peaceful-glow"></div>
+        <div class="peaceful-glow"></div>
+    </div>
+
+    <div id="inventory">
+        <div class="key-slot" id="slot1">🔑</div>
+        <div class="key-slot" id="slot2">🔑</div>
+        <div class="key-slot" id="slot3">🔑</div>
+    </div>
+
+    <div id="lock-screen">
+        <div id="puzzle-area">
+            <h1 class="modern-retro-title" id="lvl-title">QUEST 1</h1>
+            <p id="question" style="color: #fff; font-family: 'Press Start 2P'; font-size: 11px; margin-bottom: 20px; text-align: center;">1 + 1 = ?</p>
+            <input type="text" id="ans" placeholder="Answer..." autocomplete="off">
+            <button onclick="checkRiddle()" class="c-btn" style="background:var(--ios-blue); width:100%; max-width:300px; border-radius:30px; border:none;">SUBMIT</button>
+        </div>
+
+        <div id="key-spawn" onclick="collectKey()">🔑</div>
+
+        <div id="chest-zone">
+            <h2 class="modern-retro-title">VAULT FOUND</h2>
+            <p style="color:white; font-size:10px; margin-bottom:10px; font-family:'Press Start 2P';">Tap to Open</p>
+            <div class="modern-chest" id="vault" onclick="startGoldenSequence()">
+                <div class="chest-lid"></div>
+                <div class="chest-base">
+                    <div class="keyhole" id="l1"></div>
+                    <div class="keyhole" id="l2"></div>
+                    <div class="keyhole" id="l3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-scene">
+        <div class="scene-3d">
+            <div class="carousel" id="carousel">
+                <div class="polaroid"><img src="URL1"><p class="polaroid-cap">PHOTO 1</p></div>
+                <div class="polaroid"><img src="URL2"><p class="polaroid-cap">PHOTO 2</p></div>
+                <div class="polaroid"><img src="URL3"><p class="polaroid-cap">PHOTO 3</p></div>
+                <div class="polaroid"><img src="URL4"><p class="polaroid-cap">PHOTO 4</p></div>
+                <div class="polaroid"><img src="URL5"><p class="polaroid-cap">PHOTO 5</p></div>
+                <div class="polaroid"><img src="URL6"><p class="polaroid-cap">PHOTO 6</p></div>
+                <div class="polaroid"><img src="URL7"><p class="polaroid-cap">FOREVER ❤️</p></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mini-cassette" id="cassette">
+        <div class="tape-window"><div class="wheel" id="wl"></div><div class="wheel" id="wr"></div></div>
+        <div class="display-screen"><span class="marquee" id="track-name">READY...</span></div>
+        <div class="controls">
+            <button class="c-btn" onclick="changeSong(-1)">⏮</button>
+            <button class="c-btn" id="p-play" onclick="togglePlay()">▶</button>
+            <button class="c-btn" onclick="changeSong(1)">⏭</button>
+        </div>
+        <audio id="player" preload="auto"></audio>
+    </div>
+
+    <script>
+        const riddles = [
+            { q: "1 + 1 = ?", a: "2" },
+            { q: "Q2 Question?", a: "ans2" },
+            { q: "Q3 Question?", a: "ans3" }
+        ];
+
+        let currentLvl = 0;
+        let keysCollected = 0;
+        let rotation = 0;
+
+        function checkRiddle() {
+            const userIn = document.getElementById('ans').value.trim().toLowerCase();
+            if(userIn === riddles[currentLvl].a.toLowerCase()) {
+                document.getElementById('puzzle-area').style.display = 'none';
+                document.getElementById('key-spawn').style.display = 'block';
+                document.getElementById('ans').blur();
+            } else { alert("Try again!"); }
+        }
+
+        function collectKey() {
+            keysCollected++;
+            document.getElementById(`slot${keysCollected}`).classList.add('collected');
+            document.getElementById('key-spawn').style.display = 'none';
+            document.getElementById('ans').value = "";
+
+            if(keysCollected < 3) {
+                currentLvl++;
+                document.getElementById('lvl-title').innerText = `QUEST ${currentLvl + 1}`;
+                document.getElementById('question').innerText = riddles[currentLvl].q;
+                document.getElementById('puzzle-area').style.display = 'block';
+            } else {
+                document.getElementById('chest-zone').style.display = 'flex';
+            }
+        }
+
+        function startGoldenSequence() {
+            const v = document.getElementById('vault');
+            v.onclick = null;
+            setTimeout(() => { document.getElementById('l1').classList.add('light-on'); }, 400);
+            setTimeout(() => { document.getElementById('l2').classList.add('light-on'); }, 800);
+            setTimeout(() => { document.getElementById('l3').classList.add('light-on'); }, 1200);
+            setTimeout(() => {
+                v.classList.add('chest-open');
+                setTimeout(revealVault, 1000);
+            }, 1500);
+        }
+
+        function revealVault() {
+            document.getElementById('lock-screen-bg').style.opacity = '0';
+            document.getElementById('main-scene-bg').style.opacity = '1';
+            document.getElementById('main-scene-bg').style.zIndex = '1';
+
+            const lock = document.getElementById('lock-screen');
+            lock.style.transform = 'translateY(-100%)';
+            lock.style.opacity = '0';
+            
+            const main = document.getElementById('main-scene');
+            main.style.opacity = '1';
+            main.style.pointerEvents = 'auto';
+            
+            const cass = document.getElementById('cassette');
+            cass.style.transform = 'translateY(0)';
+            
+            loadSong(0);
+        }
+
+        const playlist = [{ name: "Song 1", src: "SONG_URL_1" }, { name: "Song 2", src: "SONG_URL_2" }];
+        let currentTrack = 0;
+        const audio = document.getElementById('player');
+
+        function loadSong(idx) {
+            audio.src = playlist[idx].src;
+            document.getElementById('track-name').innerText = `NOW PLAYING: ${playlist[idx].name}`;
+        }
+
+        function togglePlay() {
+            if (audio.paused) {
+                audio.play().then(() => updateUI(true)).catch(e => alert("Tap Play!"));
+            } else {
+                audio.pause();
+                updateUI(false);
+            }
+        }
+
+        function updateUI(isP) {
+            document.getElementById('p-play').innerText = isP ? "⏸" : "▶";
+            document.getElementById('wl').className = isP ? 'wheel spinning' : 'wheel';
+            document.getElementById('wr').className = isP ? 'wheel spinning' : 'wheel';
+        }
+
+        function changeSong(d) {
+            currentTrack = (currentTrack + d + playlist.length) % playlist.length;
+            loadSong(currentTrack);
+            togglePlay();
+        }
+
+        let startX = 0;
+        document.addEventListener('touchstart', (e) => startX = e.touches[0].clientX);
+        document.addEventListener('touchend', (e) => {
+            if(document.getElementById('main-scene').style.opacity === '1') {
+                let diff = startX - e.changedTouches[0].clientX;
+                if(Math.abs(diff) > 40) {
+                    rotation += (diff > 0 ? -51.4 : 51.4);
+                    document.getElementById('carousel').style.transform = `rotateY(${rotation}deg)`;
+                }
+            }
+        });
+    </script>
+</body>
+</html>
