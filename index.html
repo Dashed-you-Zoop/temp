@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>The Anniversary Vault</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@800&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --retro-yellow: #feda4a;
+            --retro-orange: #fe5b35;
+            --ios-blue: #007AFF;
+            --chest-red: #b30000;
+            --gold-glow: #f1c40f;
+            --pop-bg: #990022;
+        }
+
+        html, body {
+            height: 100%; margin: 0; padding: 0; overflow: hidden;
+            background-color: #000; position: fixed; width: 100%;
+            -webkit-user-select: none; touch-action: none;
+        }
+        body { font-family: 'Outfit', sans-serif; display: flex; justify-content: center; align-items: center; }
+
+        /* --- BACKGROUND LAYERS --- */
+        .bg-layer { position: fixed; inset: 0; z-index: 0; width: 100%; height: 100%; overflow: hidden; }
+        #lock-screen-bg {
+            background-color: var(--pop-bg);
+            background-image: radial-gradient(circle at 10% 10%, var(--retro-orange) 0%, transparent 40%), radial-gradient(circle at 50% 50%, #ff0000 0%, transparent 60%);
+            opacity: 1; transition: opacity 1s, transform 1s ease-in-out;
+        }
+        #main-scene-bg {
+            background: linear-gradient(180deg, #ff8fa3 0%, #fb6f92 50%, #800020 100%);
+            opacity: 0; z-index: -1; transition: opacity 1.5s ease-in-out;
+        }
+
+        /* --- INVENTORY --- */
+        #inventory {
+            position: fixed; top: env(safe-area-inset-top, 20px); right: 20px;
+            display: flex; gap: 10px; z-index: 5000;
+            background: rgba(0,0,0,0.4); padding: 10px; border-radius: 15px;
+        }
+        .key-slot { font-size: 24px; opacity: 0.2; transition: 0.5s; }
+        .key-slot.collected { opacity: 1; filter: drop-shadow(0 0 8px gold); }
+
+        /* --- LOCK SCREEN VIEW PANELS --- */
+        #lock-screen {
+            position: fixed; inset: 0; z-index: 2000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.8s;
+        }
+        .panel-view {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 100%; height: 100%; text-align: center;
+        }
+        .modern-retro-title { font-weight: 800; font-size: 1.8rem; background: linear-gradient(to bottom, var(--retro-yellow) 50%, #fff 50.1%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 3px 0 #000); text-align: center; }
+        input { padding: 15px; border-radius: 12px; border: none; margin-bottom: 20px; text-align: center; font-size: 16px; width: 85%; max-width: 300px; -webkit-appearance: none; background: rgba(255,255,255,0.9); color: #000; }
+        
+        #key-container { display: none; z-index: 2500; cursor: pointer; }
+.tap-label { 
+    font-family: 'Outfit', sans-serif; 
+    font-size: 14px; 
+    letter-spacing: 1px; /* Makes the letters spaced out nicely */
+    color: var(--retro-yellow); 
+    margin-bottom: 10px; 
+    text-shadow: 2px 2px 0 #000; 
+    animation: blink 1s infinite; 
+}        #key-spawn { font-size: 80px; animation: float 2s infinite ease-in-out; }
+
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        /* --- CHEST VAULT --- */
+        #chest-zone { display: none; z-index: 2400; }
+        .modern-chest { width: 180px; height: 130px; position: relative; cursor: pointer; }
+        .chest-lid { height: 50px; background: var(--chest-red); border: 4px solid #111; border-radius: 40px 40px 0 0; transform-origin: bottom; transition: 0.8s; z-index: 2; position: relative; }
+        .chest-base { height: 80px; background: var(--chest-red); border: 4px solid #111; border-radius: 0 0 10px 10px; display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: -4px;}
+        .keyhole { width: 20px; height: 20px; background: #1a1a1a; border-radius: 50%; border: 2px solid #333; }
+        .light-on { background: var(--gold-glow) !important; box-shadow: 0 0 15px var(--gold-glow), 0 0 30px var(--gold-glow); border-color: #fff !important; }
+        .chest-open .chest-lid { transform: rotateX(-110deg) translateY(-10px); }
+
+        /* --- MAIN SCENE --- */
+        #main-scene {
+            position: absolute; inset: 0; z-index: 1000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 1.5s;
+        }
+        .scene-3d { width: 210px; height: 280px; perspective: 1000px; margin-top: -80px; }
+        .carousel { width: 100%; height: 100%; position: absolute; transform-style: preserve-3d; transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .polaroid { position: absolute; width: 190px; height: 240px; background: #fff; padding: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+        .polaroid img { width: 100%; height: 180px; object-fit: cover; pointer-events: none; }
+        .polaroid-cap { font-family: 'Press Start 2P'; font-size: 7px; color: #333; margin-top: 10px; text-align: center; }
+
+        /* Custom Geometry for Exactly 5 Photos (360deg / 5 = 72deg angles) */
+        .polaroid:nth-child(1) { transform: rotateY(0deg) translateZ(160px); }
+        .polaroid:nth-child(2) { transform: rotateY(72deg) translateZ(160px); }
+        .polaroid:nth-child(3) { transform: rotateY(144deg) translateZ(160px); }
+        .polaroid:nth-child(4) { transform: rotateY(216deg) translateZ(160px); }
+        .polaroid:nth-child(5) { transform: rotateY(288deg) translateZ(160px); }
+
+        /* --- CASSETTE --- */
+        .mini-cassette {
+            position: fixed; bottom: env(safe-area-inset-bottom, 20px);
+            width: 310px; height: 140px; background: #222; border-radius: 12px;
+            padding: 10px; border: 2px solid #444; box-shadow: 0 8px 0 #000; z-index: 1500;
+            display: flex; flex-direction: column; transform: translateY(250px);
+            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .tape-window { width: 60%; height: 35px; background: #111; margin: 0 auto 8px; border: 1px solid #333; display: flex; justify-content: center; gap: 40px; }
+        .wheel { width: 25px; height: 25px; align-self: center; background: repeating-conic-gradient(#333 0% 30deg, #444 30deg 60deg); border-radius: 50%; }
+        .spinning { animation: spin 3s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .display-screen { background: #000; color: #ff4d4d; font-family: 'Press Start 2P'; font-size: 7px; padding: 5px; overflow: hidden; white-space: nowrap; margin-bottom: 8px; border: 1px solid #222;}
+        .marquee { display: inline-block; animation: scroll 10s linear infinite; }
+        @keyframes scroll { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
+        
+        /* Fixed Control Centering Logic */
+        .controls { display: flex; justify-content: center; align-items: center; gap: 10px; width: 100%; }
+        .c-btn { background: #333; color: white; border: 1px solid #444; padding: 10px 15px; border-radius: 5px; font-size: 14px; box-shadow: 0 3px 0 #111; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="bg-layer" id="lock-screen-bg"></div>
+    <div class="bg-layer" id="main-scene-bg"></div>
+
+    <div id="inventory">
+        <div class="key-slot" id="slot1">🔑</div>
+        <div class="key-slot" id="slot2">🔑</div>
+        <div class="key-slot" id="slot3">🔑</div>
+    </div>
+
+    <div id="lock-screen">
+        <div id="puzzle-area" class="panel-view">
+            <h1 class="modern-retro-title" id="lvl-title">QUEST 1</h1>
+            <p id="question" style="color: #fff; font-family: 'Press Start 2P'; font-size: 11px; margin-bottom: 20px; text-align: center;">What shade of Kiko did i gift you?</p>
+            <input type="text" id="ans" placeholder="Answer..." autocomplete="off">
+            <button onclick="checkRiddle()" class="c-btn" style="background:var(--ios-blue); width:100%; max-width:300px; border-radius:30px; border:none;">SUBMIT</button>
+        </div>
+
+        <div id="key-container" class="panel-view" onclick="collectKey()">
+            <div class="tap-label">TAP ON KEY</div>
+            <div id="key-spawn">🔑</div>
+        </div>
+
+        <div id="chest-zone" class="panel-view">
+            <h2 class="modern-retro-title">VAULT FOUND</h2>
+            <p style="color:white; font-size:10px; margin-bottom:10px; font-family:'Press Start 2P';">Tap to Open</p>
+            <div class="modern-chest" id="vault" onclick="startGoldenSequence()">
+                <div class="chest-lid"></div>
+                <div class="chest-base">
+                    <div class="keyhole" id="l1"></div>
+                    <div class="keyhole" id="l2"></div>
+                    <div class="keyhole" id="l3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-scene">
+        <div class="scene-3d">
+            <div class="carousel" id="carousel">
+                <div class="polaroid"><img src="https://raw.githubusercontent.com/Dashed-you-Zoop/temp/refs/heads/main/WhatsApp%20Image%202026-07-01%20at%2011.36.02%20PM.jpeg"><p class="polaroid-cap">YOU SO FINE !!</p></div>
+                <div class="polaroid"><img src="https://raw.githubusercontent.com/Dashed-you-Zoop/temp/refs/heads/main/WhatsApp%20Image%202026-07-02%20at%2012.03.39%20AM.jpeg"><p class="polaroid-cap">SEXY HEELS...WHERE'D YOU GET THEM?</p></div>
+                <div class="polaroid"><img src="https://raw.githubusercontent.com/Dashed-you-Zoop/temp/refs/heads/main/WhatsApp%20Image%202026-07-02%20at%2012.18.50%20AM.jpeg"><p class="polaroid-cap">QUEEN BEE</p></div>
+                <div class="polaroid"><img src="https://raw.githubusercontent.com/Dashed-you-Zoop/temp/refs/heads/main/WhatsApp%20Image%202026-07-02%20at%2012.42.15%20AM.jpeg"><p class="polaroid-cap">JUST WOW</p></div>
+                <div class="polaroid"><img src="https://github.com/Dashed-you-Zoop/temp/blob/main/WhatsApp%20Image%202026-07-02%20at%201.12.22%20AM.jpeg?raw=true"><p class="polaroid-cap">FOREVER ❤️</p></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mini-cassette" id="cassette">
+        <div class="tape-window"><div class="wheel" id="wl"></div><div class="wheel" id="wr"></div></div>
+        <div class="display-screen"><span class="marquee" id="track-name">READY...</span></div>
+        <div class="controls">
+            <button class="c-btn" onclick="changeSong(-1)">⏮</button>
+            <button class="c-btn" id="p-play" onclick="togglePlay()">▶</button>
+            <button class="c-btn" onclick="changeSong(1)">⏭</button>
+        </div>
+        <audio id="player" preload="auto"></audio>
+    </div>
+
+    <script>
+        const riddles = [
+            { q: "What lip gloss shade did i gift you?", a: "pearly mauve" },
+            { q: "But i want it...?", a: "that way" },
+            { q: "Will you marry me?", a: "yes" }
+        ];
+
+        let currentLvl = 0; let keysCollected = 0; let rotation = 0;
+
+        function checkRiddle() {
+            const userIn = document.getElementById('ans').value.trim().toLowerCase();
+            if(userIn === riddles[currentLvl].a.toLowerCase()) {
+                document.getElementById('puzzle-area').style.display = 'none';
+                document.getElementById('key-container').style.display = 'flex';
+                document.getElementById('ans').blur(); 
+            } else { alert("Try again!"); }
+        }
+
+        function collectKey() {
+            keysCollected++;
+            document.getElementById(`slot${keysCollected}`).classList.add('collected');
+            document.getElementById('key-container').style.display = 'none';
+            document.getElementById('ans').value = "";
+            if(keysCollected < 3) {
+                currentLvl++;
+                document.getElementById('lvl-title').innerText = `QUEST ${currentLvl + 1}`;
+                document.getElementById('question').innerText = riddles[currentLvl].q;
+                document.getElementById('puzzle-area').style.display = 'flex';
+            } else { document.getElementById('chest-zone').style.display = 'flex'; }
+        }
+
+        function startGoldenSequence() {
+            const v = document.getElementById('vault'); v.onclick = null;
+            setTimeout(() => { document.getElementById('l1').classList.add('light-on'); }, 400);
+            setTimeout(() => { document.getElementById('l2').classList.add('light-on'); }, 800);
+            setTimeout(() => { document.getElementById('l3').classList.add('light-on'); }, 1200);
+            setTimeout(() => { v.classList.add('chest-open'); setTimeout(revealVault, 1000); }, 1500);
+        }
+
+        function revealVault() {
+            document.getElementById('lock-screen-bg').style.opacity = '0';
+            document.getElementById('main-scene-bg').style.opacity = '1';
+            document.getElementById('main-scene-bg').style.zIndex = '1';
+            const lock = document.getElementById('lock-screen');
+            lock.style.transform = 'translateY(-100%)';
+            lock.style.opacity = '0';
+            const main = document.getElementById('main-scene');
+            main.style.opacity = '1'; main.style.pointerEvents = 'auto';
+            const cass = document.getElementById('cassette');
+            cass.style.transform = 'translateY(0)';
+            loadSong(0);
+        }
+
+        const playlist = [
+            { name: "Make You Mine", src: "https://github.com/Dashed-you-Zoop/temp/raw/refs/heads/main/PUBLIC%20-%20Make%20You%20Mine%20(Official%20Lyric%20Video).mp3" }, 
+            { name: "Phoolon Ke Rang Se", src: "https://github.com/Dashed-you-Zoop/temp/raw/refs/heads/main/Phoolon%20Ke%20Rang%20Se%20with%20lyrics%20%20Prem%20Pujari%20%20Dev%20Anand%20%20Kishore%20Kumar%20%20Old%20Hindi%20Song.mp3" }
+        ];
+        
+        let currentTrack = 0; const audio = document.getElementById('player');
+        function loadSong(idx) { audio.src = playlist[idx].src; document.getElementById('track-name').innerText = `NOW PLAYING: ${playlist[idx].name}`; }
+        
+        function togglePlay() { 
+            if (audio.paused) { audio.play().then(() => updateUI(true)).catch(e => alert("Tap Play!")); } 
+            else { audio.pause(); updateUI(false); } 
+        }
+        function updateUI(isP) { 
+            document.getElementById('p-play').innerText = isP ? "⏸" : "▶";
+            document.getElementById('wl').className = isP ? 'wheel spinning' : 'wheel';
+            document.getElementById('wr').className = isP ? 'wheel spinning' : 'wheel';
+        }
+        function changeSong(d) { currentTrack = (currentTrack + d + playlist.length) % playlist.length; loadSong(currentTrack); togglePlay(); }
+
+        let startX = 0;
+        document.addEventListener('touchstart', (e) => startX = e.touches[0].clientX);
+        document.addEventListener('touchend', (e) => {
+            if(document.getElementById('main-scene').style.opacity === '1') {
+                let diff = startX - e.changedTouches[0].clientX;
+                if(Math.abs(diff) > 40) {
+                    rotation += (diff > 0 ? -72 : 72); // Corrected snaps exactly to 5 items layout
+                    document.getElementById('carousel').style.transform = `rotateY(${rotation}deg)`;
+                }
+            }
+        });
+    </script>
+</body>
+</html>
